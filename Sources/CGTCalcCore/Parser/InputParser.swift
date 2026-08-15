@@ -121,7 +121,7 @@ public enum InputParser {
 
     switch type {
     case "BUY", "SELL":
-      guard fields.count == 6 else {
+      guard fields.count == 6 || fields.count == 8 else {
         throw ParserError.insufficientFields(line: lineNumber, expected: 6, got: fields.count)
       }
       let transaction = try parseTransaction(fields: fields, lineNumber: lineNumber, sourceOrder: sourceOrder)
@@ -148,7 +148,7 @@ public enum InputParser {
       return .transaction(transaction)
 
     case "CAPRETURN", "DIVIDEND":
-      guard fields.count == 5 else {
+      guard fields.count == 5 || fields.count == 7 else {
         throw ParserError.insufficientFields(line: lineNumber, expected: 5, got: fields.count)
       }
       let event = try parseAssetEvent(fields: fields, lineNumber: lineNumber, sourceOrder: sourceOrder)
@@ -193,8 +193,8 @@ public enum InputParser {
     let asset = fields[2]
     let quantity = try parseDecimal(fields[3], lineNumber: lineNumber)
     try self.validatePositive(quantity, field: "quantity", lineNumber: lineNumber)
-    let price: Decimal
-    let expenses: Decimal
+    var price: Decimal
+    var expenses: Decimal
     let explicitTotalCost: Decimal?
 
     switch transactionType {
@@ -222,6 +222,29 @@ public enum InputParser {
     try self.validateNonNegative(price, field: "price", lineNumber: lineNumber)
     try self.validateNonNegative(expenses, field: "expenses", lineNumber: lineNumber)
 
+    // Handle optional currency conversion for BUY/SELL
+    let originalCurrency: String?
+    let exchangeRate: Decimal?
+    let originalPrice: Decimal?
+    let originalExpenses: Decimal?
+
+    if (transactionType == .buy || transactionType == .sell), fields.count == 8 {
+      let currency = fields[6]
+      let rate = try self.parseDecimal(fields[7], lineNumber: lineNumber)
+      try self.validatePositive(rate, field: "exchange rate", lineNumber: lineNumber)
+      originalCurrency = currency
+      exchangeRate = rate
+      originalPrice = price
+      originalExpenses = expenses
+      price = price * rate
+      expenses = expenses * rate
+    } else {
+      originalCurrency = nil
+      exchangeRate = nil
+      originalPrice = nil
+      originalExpenses = nil
+    }
+
     return Transaction(
       sourceOrder: sourceOrder,
       type: transactionType,
@@ -230,7 +253,11 @@ public enum InputParser {
       quantity: quantity,
       price: price,
       expenses: expenses,
-      explicitTotalCost: explicitTotalCost)
+      explicitTotalCost: explicitTotalCost,
+      originalCurrency: originalCurrency,
+      exchangeRate: exchangeRate,
+      originalPrice: originalPrice,
+      originalExpenses: originalExpenses)
   }
 
   /// Parses a CAPRETURN, DIVIDEND, SPLIT, UNSPLIT, or RESTRUCT row into an asset-event model.
@@ -259,16 +286,39 @@ public enum InputParser {
     switch type {
     case .capitalReturn, .dividend:
       let amount = try parseDecimal(fields[3], lineNumber: lineNumber)
-      let value = try parseDecimal(fields[4], lineNumber: lineNumber)
+      var value = try parseDecimal(fields[4], lineNumber: lineNumber)
       try self.validatePositive(amount, field: "amount", lineNumber: lineNumber)
       try self.validateNonNegative(value, field: "value", lineNumber: lineNumber)
+
+      // Handle optional currency conversion
+      let originalCurrency: String?
+      let exchangeRate: Decimal?
+      let originalValue: Decimal?
+
+      if fields.count == 7 {
+        let currency = fields[5]
+        let rate = try self.parseDecimal(fields[6], lineNumber: lineNumber)
+        try self.validatePositive(rate, field: "exchange rate", lineNumber: lineNumber)
+        originalCurrency = currency
+        exchangeRate = rate
+        originalValue = value
+        value = value * rate
+      } else {
+        originalCurrency = nil
+        exchangeRate = nil
+        originalValue = nil
+      }
+
       return try AssetEvent(
         sourceOrder: sourceOrder,
         type: type,
         date: date,
         asset: asset,
         distributionAmount: amount,
-        distributionValue: value)
+        distributionValue: value,
+        originalCurrency: originalCurrency,
+        exchangeRate: exchangeRate,
+        originalValue: originalValue)
 
     case .split, .unsplit:
       let multiplier = try parseDecimal(fields[3], lineNumber: lineNumber)

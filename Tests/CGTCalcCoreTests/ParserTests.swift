@@ -512,4 +512,140 @@ final class ParserTests: XCTestCase {
     let allFailures = failures.snapshot()
     XCTAssertTrue(allFailures.isEmpty, allFailures.prefix(10).joined(separator: "\n"))
   }
+
+  // MARK: - Foreign Currency Tests
+
+  func testParseBuyWithCurrencyConversion() throws {
+    let input = "BUY 15/01/2020 AMZN.NYSE 6 1437.86 7.78 USD 0.7823"
+
+    let data = try InputParser.parse(content: input)
+    XCTAssertEqual(data.count, 1)
+
+    if case .transaction(let t) = data[0] {
+      XCTAssertEqual(t.type, .buy)
+      XCTAssertEqual(t.asset, "AMZN.NYSE")
+      XCTAssertEqual(t.quantity, 6)
+      // Price should be converted: 1437.86 * 0.7823
+      XCTAssertEqual(t.price, Decimal(string: "1437.86")! * Decimal(string: "0.7823")!)
+      // Expenses should be converted: 7.78 * 0.7823
+      XCTAssertEqual(t.expenses, Decimal(string: "7.78")! * Decimal(string: "0.7823")!)
+      // Original values preserved
+      XCTAssertEqual(t.originalCurrency, "USD")
+      XCTAssertEqual(t.exchangeRate, Decimal(string: "0.7823")!)
+      XCTAssertEqual(t.originalPrice, Decimal(string: "1437.86")!)
+      XCTAssertEqual(t.originalExpenses, Decimal(string: "7.78")!)
+    } else {
+      XCTFail("Expected transaction")
+    }
+  }
+
+  func testParseSellWithCurrencyConversion() throws {
+    let input = "SELL 15/01/2020 AMZN.NYSE 4 1437.86 7.78 USD 0.7823"
+
+    let data = try InputParser.parse(content: input)
+    XCTAssertEqual(data.count, 1)
+
+    if case .transaction(let t) = data[0] {
+      XCTAssertEqual(t.type, .sell)
+      XCTAssertEqual(t.originalCurrency, "USD")
+      XCTAssertEqual(t.exchangeRate, Decimal(string: "0.7823")!)
+      XCTAssertEqual(t.originalPrice, Decimal(string: "1437.86")!)
+      XCTAssertEqual(t.originalExpenses, Decimal(string: "7.78")!)
+    } else {
+      XCTFail("Expected transaction")
+    }
+  }
+
+  func testParseBuyWithoutCurrencyHasNilOriginals() throws {
+    let input = "BUY 01/01/2020 TEST 100 10.0 5"
+
+    let data = try InputParser.parse(content: input)
+    if case .transaction(let t) = data[0] {
+      XCTAssertNil(t.originalCurrency)
+      XCTAssertNil(t.exchangeRate)
+      XCTAssertNil(t.originalPrice)
+      XCTAssertNil(t.originalExpenses)
+      XCTAssertEqual(t.price, 10)
+      XCTAssertEqual(t.expenses, 5)
+    } else {
+      XCTFail("Expected transaction")
+    }
+  }
+
+  func testParseRejectsSevenFieldBuySell() throws {
+    let input = "BUY 01/01/2020 TEST 100 10.0 5 USD"
+    XCTAssertThrowsError(try InputParser.parse(content: input))
+  }
+
+  func testParseRejectsZeroExchangeRate() throws {
+    let input = "BUY 01/01/2020 TEST 100 10.0 5 USD 0"
+    XCTAssertThrowsError(try InputParser.parse(content: input))
+  }
+
+  func testParseRejectsNegativeExchangeRate() throws {
+    let input = "BUY 01/01/2020 TEST 100 10.0 5 USD -0.5"
+    XCTAssertThrowsError(try InputParser.parse(content: input))
+  }
+
+  func testParseCapReturnWithCurrencyConversion() throws {
+    let input = "CAPRETURN 01/06/2020 AMZN.NYSE 100 5.50 USD 0.7823"
+
+    let data = try InputParser.parse(content: input)
+    XCTAssertEqual(data.count, 1)
+
+    if case .assetEvent(let e) = data[0] {
+      XCTAssertEqual(e.asset, "AMZN.NYSE")
+      XCTAssertEqual(e.originalCurrency, "USD")
+      XCTAssertEqual(e.exchangeRate, Decimal(string: "0.7823")!)
+      XCTAssertEqual(e.originalValue, Decimal(string: "5.50")!)
+      // Value should be converted: 5.50 * 0.7823
+      if case .capitalReturn(let amount, let value) = e.kind {
+        XCTAssertEqual(amount, 100)
+        XCTAssertEqual(value, Decimal(string: "5.50")! * Decimal(string: "0.7823")!)
+      } else {
+        XCTFail("Expected capitalReturn kind")
+      }
+    } else {
+      XCTFail("Expected asset event")
+    }
+  }
+
+  func testParseDividendWithCurrencyConversion() throws {
+    let input = "DIVIDEND 01/06/2020 AMZN.NYSE 100 3.20 USD 0.7823"
+
+    let data = try InputParser.parse(content: input)
+    XCTAssertEqual(data.count, 1)
+
+    if case .assetEvent(let e) = data[0] {
+      XCTAssertEqual(e.originalCurrency, "USD")
+      XCTAssertEqual(e.exchangeRate, Decimal(string: "0.7823")!)
+      XCTAssertEqual(e.originalValue, Decimal(string: "3.20")!)
+      if case .dividend(let amount, let value) = e.kind {
+        XCTAssertEqual(amount, 100)
+        XCTAssertEqual(value, Decimal(string: "3.20")! * Decimal(string: "0.7823")!)
+      } else {
+        XCTFail("Expected dividend kind")
+      }
+    } else {
+      XCTFail("Expected asset event")
+    }
+  }
+
+  func testParseCapReturnWithoutCurrencyHasNilOriginals() throws {
+    let input = "CAPRETURN 01/06/2020 TEST 100 5.50"
+
+    let data = try InputParser.parse(content: input)
+    if case .assetEvent(let e) = data[0] {
+      XCTAssertNil(e.originalCurrency)
+      XCTAssertNil(e.exchangeRate)
+      XCTAssertNil(e.originalValue)
+    } else {
+      XCTFail("Expected asset event")
+    }
+  }
+
+  func testParseRejectsSixFieldCapReturn() throws {
+    let input = "CAPRETURN 01/06/2020 TEST 100 5.50 USD"
+    XCTAssertThrowsError(try InputParser.parse(content: input))
+  }
 }

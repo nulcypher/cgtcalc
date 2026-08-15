@@ -1,0 +1,39 @@
+# SUMMARY
+
+Tax year    Gain   Proceeds   Exemption   Loss carry   Taxable gain
+===================================================================
+2020/2021   £439   £1200      £12300      £0           £0          
+
+
+# TAX YEAR DETAILS
+
+## TAX YEAR 2020/2021
+
+1 gains with total of 439.
+0 losses with total of 0.
+
+1) SOLD 10 of AMZN.NYSE on 01/06/2020 for GAIN of £439
+Matches with:
+  - SECTION 104: 10 at cost basis of £75.375
+Calculation: (10 * 120 - 6.4) - ( (10 * 75.375) ) = 439
+
+
+# TAX RETURN INFORMATION
+
+2020/2021: Disposals = 1, proceeds = 1200, allowable costs = 760, total gains = 439, total losses = 0
+
+
+# HOLDINGS
+
+NONE
+
+
+# TRANSACTIONS
+
+01/03/2020 BOUGHT 10 of AMZN.NYSE at £75 (USD100 @ 0.75) with £3.75 (USD5 @ 0.75) expenses
+01/06/2020 SOLD 10 of AMZN.NYSE at £120 (USD150 @ 0.8) with £6.4 (USD8 @ 0.8) expenses
+
+
+# ASSET EVENTS
+
+NONE

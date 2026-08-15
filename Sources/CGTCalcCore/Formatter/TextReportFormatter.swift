@@ -269,9 +269,9 @@ public struct TextReportFormatter {
       let dateStr = DateParser.format(transaction.date)
       let line = switch transaction.type {
       case .buy:
-        "\(dateStr) BOUGHT \(self.formatDecimal(transaction.quantity)) of \(transaction.asset) at £\(self.formatDecimal(transaction.price)) with £\(self.formatDecimal(transaction.expenses)) expenses"
+        "\(dateStr) BOUGHT \(self.formatDecimal(transaction.quantity)) of \(transaction.asset) at \(self.formatTransactionPrice(transaction)) with \(self.formatTransactionExpenses(transaction)) expenses"
       case .sell:
-        "\(dateStr) SOLD \(self.formatDecimal(transaction.quantity)) of \(transaction.asset) at £\(self.formatDecimal(transaction.price)) with £\(self.formatDecimal(transaction.expenses)) expenses"
+        "\(dateStr) SOLD \(self.formatDecimal(transaction.quantity)) of \(transaction.asset) at \(self.formatTransactionPrice(transaction)) with \(self.formatTransactionExpenses(transaction)) expenses"
       case .spouseIn:
         if let totalCost = transaction.explicitTotalCost {
           "\(dateStr) SPOUSEIN \(self.formatDecimal(transaction.quantity)) of \(transaction.asset) with exact total cost £\(self.formatDecimal(totalCost))"
@@ -285,6 +285,28 @@ public struct TextReportFormatter {
     }
 
     return output
+  }
+
+  /// Formats a transaction price, showing original foreign currency if present.
+  private func formatTransactionPrice(_ transaction: Transaction) -> String {
+    if let currency = transaction.originalCurrency,
+      let rate = transaction.exchangeRate,
+      let originalPrice = transaction.originalPrice
+    {
+      return "£\(self.formatDecimal(transaction.price)) (\(currency)\(self.formatDecimal(originalPrice)) @ \(self.formatDecimal(rate)))"
+    }
+    return "£\(self.formatDecimal(transaction.price))"
+  }
+
+  /// Formats transaction expenses, showing original foreign currency if present.
+  private func formatTransactionExpenses(_ transaction: Transaction) -> String {
+    if let currency = transaction.originalCurrency,
+      let rate = transaction.exchangeRate,
+      let originalExpenses = transaction.originalExpenses
+    {
+      return "£\(self.formatDecimal(transaction.expenses)) (\(currency)\(self.formatDecimal(originalExpenses)) @ \(self.formatDecimal(rate)))"
+    }
+    return "£\(self.formatDecimal(transaction.expenses))"
   }
 
   // MARK: - Asset Events
@@ -310,13 +332,26 @@ public struct TextReportFormatter {
       case .restruct(let oldUnits, let newUnits):
         output += "\(dateStr) \(event.asset) RESTRUCT by \(self.formatDecimal(oldUnits)):\(self.formatDecimal(newUnits))\n"
       case .capitalReturn(let amount, let value):
-        output += "\(dateStr) \(event.asset) CAPITAL RETURN on \(self.formatDecimal(amount)) for \(self.formatCurrency(value))\n"
+        let valueStr = self.formatEventValue(value, event: event)
+        output += "\(dateStr) \(event.asset) CAPITAL RETURN on \(self.formatDecimal(amount)) for \(valueStr)\n"
       case .dividend(let amount, let value):
-        output += "\(dateStr) \(event.asset) DIVIDEND on \(self.formatDecimal(amount)) for \(self.formatCurrency(value))\n"
+        let valueStr = self.formatEventValue(value, event: event)
+        output += "\(dateStr) \(event.asset) DIVIDEND on \(self.formatDecimal(amount)) for \(valueStr)\n"
       }
     }
 
     return output
+  }
+
+  /// Formats an asset event value, showing original foreign currency if present.
+  private func formatEventValue(_ value: Decimal, event: AssetEvent) -> String {
+    if let currency = event.originalCurrency,
+      let rate = event.exchangeRate,
+      let originalValue = event.originalValue
+    {
+      return "\(self.formatCurrency(value)) (\(currency)\(self.formatDecimal(originalValue)) @ \(self.formatDecimal(rate)))"
+    }
+    return self.formatCurrency(value)
   }
 
   // MARK: - Formatting Helpers

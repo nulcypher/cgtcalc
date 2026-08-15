@@ -39,19 +39,32 @@ public struct AssetEvent {
   public let asset: String
   public let kind: Kind
 
+  /// Original foreign currency label (e.g. "USD"), nil when amounts are already in GBP.
+  public let originalCurrency: String?
+  /// Exchange rate used to convert to GBP (1 foreign unit = rate GBP), nil when no conversion applied.
+  public let exchangeRate: Decimal?
+  /// Distribution value in the original foreign currency before conversion.
+  public let originalValue: Decimal?
+
   /// Creates an asset event from shared metadata plus specific kind payload.
   public init(
     id: UUID = UUID(),
     sourceOrder: Int? = nil,
     date: Date,
     asset: String,
-    kind: Kind)
+    kind: Kind,
+    originalCurrency: String? = nil,
+    exchangeRate: Decimal? = nil,
+    originalValue: Decimal? = nil)
   {
     self.id = id
     self.sourceOrder = sourceOrder
     self.date = date
     self.asset = asset
     self.kind = kind
+    self.originalCurrency = originalCurrency
+    self.exchangeRate = exchangeRate
+    self.originalValue = originalValue
   }
 
   /// Convenience initializer for split and reverse-split events.
@@ -112,7 +125,10 @@ public struct AssetEvent {
     date: Date,
     asset: String,
     distributionAmount: Decimal,
-    distributionValue: Decimal) throws
+    distributionValue: Decimal,
+    originalCurrency: String? = nil,
+    exchangeRate: Decimal? = nil,
+    originalValue: Decimal? = nil) throws
   {
     switch type {
     case .capitalReturn:
@@ -121,14 +137,20 @@ public struct AssetEvent {
         sourceOrder: sourceOrder,
         date: date,
         asset: asset,
-        kind: .capitalReturn(amount: distributionAmount, value: distributionValue))
+        kind: .capitalReturn(amount: distributionAmount, value: distributionValue),
+        originalCurrency: originalCurrency,
+        exchangeRate: exchangeRate,
+        originalValue: originalValue)
     case .dividend:
       self.init(
         id: id,
         sourceOrder: sourceOrder,
         date: date,
         asset: asset,
-        kind: .dividend(amount: distributionAmount, value: distributionValue))
+        kind: .dividend(amount: distributionAmount, value: distributionValue),
+        originalCurrency: originalCurrency,
+        exchangeRate: exchangeRate,
+        originalValue: originalValue)
     case .split, .unsplit, .restruct:
       throw InitializationError.invalidDistributionType(type)
     }

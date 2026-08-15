@@ -107,18 +107,34 @@ The full list of kinds of data are as follows:
 
 | **Kind**    | **Category** | **Description** | **Fields** |
 |-------------|--------------|-----------------|------------|
-| `BUY`       | Transaction  | Buy transaction | `<DATE> <ASSET> <AMOUNT> <PRICE> <EXPENSES>` |
-| `SELL`      | Transaction  | Sell transaction | `<DATE> <ASSET> <AMOUNT> <PRICE> <EXPENSES>` |
+| `BUY`       | Transaction  | Buy transaction | `<DATE> <ASSET> <AMOUNT> <PRICE> <EXPENSES> [<CURRENCY> <RATE>]` |
+| `SELL`      | Transaction  | Sell transaction | `<DATE> <ASSET> <AMOUNT> <PRICE> <EXPENSES> [<CURRENCY> <RATE>]` |
 | `SPOUSEIN`  | Transaction  | No-gain/no-loss transfer in from spouse/civil partner | `<DATE> <ASSET> <AMOUNT> TOTALCOST <EXACT_TOTAL_COST>` |
 | `SPOUSEOUT` | Transaction  | No-gain/no-loss transfer out to spouse/civil partner (costed using normal share-identification ordering) | `<DATE> <ASSET> <AMOUNT>` |
-| `CAPRETURN` | Asset event  | Capital return / equalisation event which reduces allowable cost | `<DATE> <ASSET> <AMOUNT> <VALUE>` |
-| `DIVIDEND`  | Asset event  | Accumulation distribution which increases allowable cost | `<DATE> <ASSET> <AMOUNT> <VALUE>` |
+| `CAPRETURN` | Asset event  | Capital return / equalisation event which reduces allowable cost | `<DATE> <ASSET> <AMOUNT> <VALUE> [<CURRENCY> <RATE>]` |
+| `DIVIDEND`  | Asset event  | Accumulation distribution which increases allowable cost | `<DATE> <ASSET> <AMOUNT> <VALUE> [<CURRENCY> <RATE>]` |
 | `SPLIT`     | Asset event  | Stock split     | `<DATE> <ASSET> <MULTIPLIER>` |
 | `UNSPLIT`   | Asset event  | Stock un-split  | `<DATE> <ASSET> <MULTIPLIER>` |
 | `RESTRUCT`  | Asset event  | Exact-ratio share restructure using old:new units | `<DATE> <ASSET> <OLD>:<NEW>` |
 
-Rows must contain exactly the fields shown above; extra trailing fields are rejected.
+Rows must contain exactly the fields shown above (with the optional currency fields either both present or both absent); other field counts are rejected.
 Numeric tokens accept standard decimal numbers with optional `£` and valid thousands separators (for example `1234.56`, `1,234.56`, `£1,234.56`). Scientific notation is rejected.
+
+#### Foreign currency
+
+For transactions and asset events denominated in a foreign currency, append `<CURRENCY> <RATE>` to the row:
+
+```
+BUY 15/01/2020 AMZN.NYSE 6 1437.86 7.78 USD 0.7823
+SELL 15/01/2020 AMZN.NYSE 4 1437.86 7.78 USD 0.7823
+CAPRETURN 01/06/2020 AMZN.NYSE 100 5.50 USD 0.7823
+```
+
+- `CURRENCY` is a label (e.g. `USD`, `EUR`) — purely informational, not validated against any list.
+- `RATE` is the conversion factor: 1 foreign currency unit = `RATE` GBP. The tool multiplies price, expenses, and event values by this rate at parse time.
+- The rate must be positive.
+- All calculations are performed in GBP. The original foreign-currency amounts and rate are preserved and displayed in the output for audit purposes.
+- HMRC expects a single consistent exchange rate for a given asset on any one day. When same-day BUY rows are merged (as the tool does automatically), the result uses the weighted-average GBP values. Users should ensure a consistent daily rate per asset.
 
 Notes for spouse transfers:
 
