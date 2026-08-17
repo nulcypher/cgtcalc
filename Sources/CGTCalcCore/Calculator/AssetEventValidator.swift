@@ -24,7 +24,7 @@ enum AssetEventValidator {
     return assetEvents.map { event in
       guard let eligibleAmount = eligibleAmounts[event.id] else { return event }
       let kind: AssetEvent.Kind = switch event.kind {
-      case .capitalReturn(_, let value):
+      case .capitalReturn(_, let value), .capitalDistribution(_, let value):
         .capitalReturn(amount: eligibleAmount, value: value)
       case .dividend(_, let value):
         .dividend(amount: eligibleAmount, value: value)
@@ -83,7 +83,7 @@ enum AssetEventValidator {
             (oldUnits: multiplier, newUnits: 1)
           case .restruct(let oldUnits, let newUnits):
             (oldUnits: oldUnits, newUnits: newUnits)
-          case .capitalReturn, .dividend:
+          case .capitalReturn, .capitalDistribution, .dividend:
             nil
           }
 
@@ -306,7 +306,7 @@ enum AssetEventValidator {
         false
       case .event(let event):
         switch event.kind {
-        case .capitalReturn, .dividend:
+        case .capitalReturn, .capitalDistribution, .dividend:
           true
         case .split, .unsplit, .restruct:
           false

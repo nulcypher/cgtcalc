@@ -397,7 +397,7 @@
           return "\(date) \(event.asset) UNSPLIT by \(self.decimalString(multiplier))"
         case .restruct(let oldUnits, let newUnits):
           return "\(date) \(event.asset) RESTRUCT by \(self.decimalString(oldUnits)):\(self.decimalString(newUnits))"
-        case .capitalReturn(let amount, let value):
+        case .capitalReturn(let amount, let value), .capitalDistribution(let amount, let value):
           return "\(date) \(event.asset) CAPITAL RETURN on \(self.decimalString(amount)) for \(self.currency(value))"
         case .dividend(let amount, let value):
           return "\(date) \(event.asset) DIVIDEND on \(self.decimalString(amount)) for \(self.currency(value))"

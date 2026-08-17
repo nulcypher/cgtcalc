@@ -138,7 +138,7 @@ enum BedAndBreakfastMatcher {
         (oldUnits: multiplier, newUnits: 1)
       case .restruct(let oldUnits, let newUnits):
         (oldUnits: oldUnits, newUnits: newUnits)
-      case .capitalReturn, .dividend:
+      case .capitalReturn, .capitalDistribution, .dividend:
         nil
       }
 
@@ -189,7 +189,7 @@ enum BedAndBreakfastMatcher {
         return false
       }
       return switch event.kind {
-      case .capitalReturn, .dividend:
+      case .capitalReturn, .capitalDistribution, .dividend:
         true
       case .split, .unsplit, .restruct:
         false
@@ -207,7 +207,7 @@ enum BedAndBreakfastMatcher {
         at: event.date,
         sortedEvents: sortedEvents)
       switch event.kind {
-      case .capitalReturn(let amount, let value):
+      case .capitalReturn(let amount, let value), .capitalDistribution(let amount, let value):
         let remainingEventValue = max(
           0,
           value - previouslyAllocatedEventValues[event.id, default: 0] - allocatedEventValues[event.id, default: 0])
@@ -272,7 +272,7 @@ enum BedAndBreakfastMatcher {
       return switch event.kind {
       case .split, .unsplit, .restruct:
         true
-      case .capitalReturn, .dividend:
+      case .capitalReturn, .capitalDistribution, .dividend:
         false
       }
     }
@@ -297,7 +297,7 @@ enum BedAndBreakfastMatcher {
         (oldUnits: multiplier, newUnits: 1)
       case .restruct(let oldUnits, let newUnits):
         (oldUnits: oldUnits, newUnits: newUnits)
-      case .capitalReturn, .dividend:
+      case .capitalReturn, .capitalDistribution, .dividend:
         nil
       }
 

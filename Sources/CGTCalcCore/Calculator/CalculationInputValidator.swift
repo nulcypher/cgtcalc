@@ -77,7 +77,7 @@ public enum CalculationInputValidator {
         date: event.date,
         field: "asset")
       switch event.kind {
-      case .capitalReturn(let amount, let value), .dividend(let amount, let value):
+      case .capitalReturn(let amount, let value), .capitalDistribution(let amount, let value), .dividend(let amount, let value):
         try self.validate(
           amount,
           requirement: .positive,

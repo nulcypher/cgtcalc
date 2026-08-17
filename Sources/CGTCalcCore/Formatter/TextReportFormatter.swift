@@ -334,6 +334,9 @@ public struct TextReportFormatter {
       case .capitalReturn(let amount, let value):
         let valueStr = self.formatEventValue(value, event: event)
         output += "\(dateStr) \(event.asset) CAPITAL RETURN on \(self.formatDecimal(amount)) for \(valueStr)\n"
+      case .capitalDistribution(let amount, let value):
+        let valueStr = self.formatEventValue(value, event: event)
+        output += "\(dateStr) \(event.asset) CAPITAL DISTRIBUTION on \(self.formatDecimal(amount)) for \(valueStr)\n"
       case .dividend(let amount, let value):
         let valueStr = self.formatEventValue(value, event: event)
         output += "\(dateStr) \(event.asset) DIVIDEND on \(self.formatDecimal(amount)) for \(valueStr)\n"

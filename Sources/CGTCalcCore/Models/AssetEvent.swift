@@ -4,6 +4,7 @@ import Foundation
 
 public enum AssetEventType: String, CaseIterable, Sendable {
   case capitalReturn = "CAPRETURN"
+  case capitalDistribution = "CAPDIST"
   case dividend = "DIVIDEND"
   case split = "SPLIT"
   case unsplit = "UNSPLIT"
@@ -27,6 +28,7 @@ public struct AssetEvent {
 
   public enum Kind {
     case capitalReturn(amount: Decimal, value: Decimal)
+    case capitalDistribution(amount: Decimal, value: Decimal)
     case dividend(amount: Decimal, value: Decimal)
     case split(multiplier: Decimal)
     case unsplit(multiplier: Decimal)
@@ -88,7 +90,7 @@ public struct AssetEvent {
       self.init(id: id, sourceOrder: sourceOrder, date: date, asset: asset, kind: .split(multiplier: multiplier))
     case .unsplit:
       self.init(id: id, sourceOrder: sourceOrder, date: date, asset: asset, kind: .unsplit(multiplier: multiplier))
-    case .capitalReturn, .dividend, .restruct:
+    case .capitalReturn, .capitalDistribution, .dividend, .restruct:
       throw InitializationError.invalidRestructureType(type)
     }
   }
@@ -117,7 +119,7 @@ public struct AssetEvent {
       kind: .restruct(oldUnits: oldUnits, newUnits: newUnits))
   }
 
-  /// Convenience initializer for CAPRETURN and DIVIDEND events.
+  /// Convenience initializer for CAPRETURN, CAPDIST, and DIVIDEND events.
   public init(
     id: UUID = UUID(),
     sourceOrder: Int? = nil,
@@ -138,6 +140,16 @@ public struct AssetEvent {
         date: date,
         asset: asset,
         kind: .capitalReturn(amount: distributionAmount, value: distributionValue),
+        originalCurrency: originalCurrency,
+        exchangeRate: exchangeRate,
+        originalValue: originalValue)
+    case .capitalDistribution:
+      self.init(
+        id: id,
+        sourceOrder: sourceOrder,
+        date: date,
+        asset: asset,
+        kind: .capitalDistribution(amount: distributionAmount, value: distributionValue),
         originalCurrency: originalCurrency,
         exchangeRate: exchangeRate,
         originalValue: originalValue)
@@ -162,6 +174,8 @@ extension AssetEvent {
     switch self.kind {
     case .capitalReturn:
       .capitalReturn
+    case .capitalDistribution:
+      .capitalDistribution
     case .dividend:
       .dividend
     case .split:
@@ -177,6 +191,8 @@ extension AssetEvent {
     switch self.kind {
     case .capitalReturn:
       .capitalReturn
+    case .capitalDistribution:
+      .capitalDistribution
     case .dividend:
       .dividend
     case .split, .unsplit, .restruct:
@@ -186,7 +202,7 @@ extension AssetEvent {
 
   var distributionAmount: Decimal {
     switch self.kind {
-    case .capitalReturn(let amount, _), .dividend(let amount, _):
+    case .capitalReturn(let amount, _), .capitalDistribution(let amount, _), .dividend(let amount, _):
       amount
     case .split, .unsplit, .restruct:
       0
@@ -195,7 +211,7 @@ extension AssetEvent {
 
   var distributionValue: Decimal {
     switch self.kind {
-    case .capitalReturn(_, let value), .dividend(_, let value):
+    case .capitalReturn(_, let value), .capitalDistribution(_, let value), .dividend(_, let value):
       value
     case .split, .unsplit, .restruct:
       0

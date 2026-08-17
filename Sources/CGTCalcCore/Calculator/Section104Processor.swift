@@ -224,6 +224,13 @@ enum Section104Processor {
       adjustedHolding.costBasis = max(0, adjustedHolding.costBasis - value)
       adjustedHolding.groupIIEntries = self.applyingGroupIIAdjustment(-value, to: holding.groupIIEntries)
       return adjustedHolding
+    case .capitalDistribution:
+      // General capital distribution — reduces pool cost proportionally across all shares.
+      // No Group II validation — applies to the entire holding.
+      var adjustedHolding = holding
+      adjustedHolding.costBasis = max(0, adjustedHolding.costBasis - value)
+      adjustedHolding.groupIIEntries = self.applyingGroupIIAdjustment(-value, to: holding.groupIIEntries)
+      return adjustedHolding
     case .dividend:
       var adjustedHolding = holding
       adjustedHolding.costBasis += value
@@ -294,7 +301,7 @@ enum Section104Processor {
             poolQuantity: match.poolQuantity * ratio.newUnits / ratio.oldUnits,
             poolCost: match.poolCost)
         }
-      case .capitalReturn, .dividend:
+      case .capitalReturn, .capitalDistribution, .dividend:
         continue
       }
     }

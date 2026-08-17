@@ -147,7 +147,7 @@ public enum InputParser {
       let transaction = try parseTransaction(fields: fields, lineNumber: lineNumber, sourceOrder: sourceOrder)
       return .transaction(transaction)
 
-    case "CAPRETURN", "DIVIDEND":
+    case "CAPRETURN", "CAPDIST", "DIVIDEND":
       guard fields.count == 5 || fields.count == 6 || fields.count == 7 else {
         throw ParserError.insufficientFields(line: lineNumber, expected: 5, got: fields.count)
       }
@@ -276,6 +276,8 @@ public enum InputParser {
     let type: AssetEventType = switch fields[0] {
     case "CAPRETURN":
       .capitalReturn
+    case "CAPDIST":
+      .capitalDistribution
     case "DIVIDEND":
       .dividend
     case "SPLIT":
@@ -290,7 +292,7 @@ public enum InputParser {
     let asset = fields[2]
 
     switch type {
-    case .capitalReturn, .dividend:
+    case .capitalReturn, .capitalDistribution, .dividend:
       let amount = try parseDecimal(fields[3], lineNumber: lineNumber)
       var value = try parseDecimal(fields[4], lineNumber: lineNumber)
       try self.validatePositive(amount, field: "amount", lineNumber: lineNumber)
