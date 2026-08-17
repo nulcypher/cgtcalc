@@ -376,7 +376,7 @@ final class ParserTests: XCTestCase {
 
   func testParseRejectsExtraFieldsForBuySell() {
     let input = """
-    BUY 01/01/2020 TEST 100 10.0 5 EXTRA
+    BUY 01/01/2020 TEST 100 10.0 5 USD 0.75 EXTRA
     """
 
     XCTAssertThrowsError(try InputParser.parse(content: input)) { error in
@@ -385,7 +385,7 @@ final class ParserTests: XCTestCase {
       }
       XCTAssertEqual(line, 1)
       XCTAssertEqual(expected, 6)
-      XCTAssertEqual(got, 7)
+      XCTAssertEqual(got, 9)
     }
   }
 
@@ -406,7 +406,7 @@ final class ParserTests: XCTestCase {
 
   func testParseRejectsExtraFieldsForAssetEvent() {
     let input = """
-    DIVIDEND 01/02/2020 TEST 50 25.0 EXTRA
+    DIVIDEND 01/02/2020 TEST 50 25.0 USD 0.75 EXTRA
     """
 
     XCTAssertThrowsError(try InputParser.parse(content: input)) { error in
@@ -415,7 +415,7 @@ final class ParserTests: XCTestCase {
       }
       XCTAssertEqual(line, 1)
       XCTAssertEqual(expected, 5)
-      XCTAssertEqual(got, 6)
+      XCTAssertEqual(got, 8)
     }
   }
 
@@ -572,9 +572,20 @@ final class ParserTests: XCTestCase {
     }
   }
 
-  func testParseRejectsSevenFieldBuySell() throws {
+  func testParseSevenFieldBuySellSetsCurrencyWithoutRate() throws {
     let input = "BUY 01/01/2020 TEST 100 10.0 5 USD"
-    XCTAssertThrowsError(try InputParser.parse(content: input))
+    let data = try InputParser.parse(content: input)
+    XCTAssertEqual(data.count, 1)
+    if case .transaction(let t) = data[0] {
+      XCTAssertEqual(t.originalCurrency, "USD")
+      XCTAssertNil(t.exchangeRate)
+      XCTAssertEqual(t.originalPrice, 10)
+      XCTAssertEqual(t.originalExpenses, 5)
+      // Price not yet converted — still in foreign currency
+      XCTAssertEqual(t.price, 10)
+    } else {
+      XCTFail("Expected transaction")
+    }
   }
 
   func testParseRejectsZeroExchangeRate() throws {
@@ -644,8 +655,16 @@ final class ParserTests: XCTestCase {
     }
   }
 
-  func testParseRejectsSixFieldCapReturn() throws {
+  func testParseSixFieldCapReturnSetsCurrencyWithoutRate() throws {
     let input = "CAPRETURN 01/06/2020 TEST 100 5.50 USD"
-    XCTAssertThrowsError(try InputParser.parse(content: input))
+    let data = try InputParser.parse(content: input)
+    XCTAssertEqual(data.count, 1)
+    if case .assetEvent(let e) = data[0] {
+      XCTAssertEqual(e.originalCurrency, "USD")
+      XCTAssertNil(e.exchangeRate)
+      XCTAssertEqual(e.originalValue, Decimal(string: "5.50")!)
+    } else {
+      XCTFail("Expected asset event")
+    }
   }
 }

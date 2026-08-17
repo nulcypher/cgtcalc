@@ -9,11 +9,12 @@ public enum CGTEngine {
     inputData: [InputData],
     taxRateProvider: any TaxRateProvider) throws -> CalculationResult
   {
-    let transactions = inputData.compactMap { data -> Transaction? in
+    let resolvedData = try ExchangeRateResolver.resolve(inputData)
+    let transactions = resolvedData.compactMap { data -> Transaction? in
       if case .transaction(let transaction) = data { return transaction }
       return nil
     }
-    let assetEvents = inputData.compactMap { data -> AssetEvent? in
+    let assetEvents = resolvedData.compactMap { data -> AssetEvent? in
       if case .assetEvent(let event) = data { return event }
       return nil
     }

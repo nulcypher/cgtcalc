@@ -121,7 +121,7 @@ public enum InputParser {
 
     switch type {
     case "BUY", "SELL":
-      guard fields.count == 6 || fields.count == 8 else {
+      guard fields.count == 6 || fields.count == 7 || fields.count == 8 else {
         throw ParserError.insufficientFields(line: lineNumber, expected: 6, got: fields.count)
       }
       let transaction = try parseTransaction(fields: fields, lineNumber: lineNumber, sourceOrder: sourceOrder)
@@ -148,7 +148,7 @@ public enum InputParser {
       return .transaction(transaction)
 
     case "CAPRETURN", "DIVIDEND":
-      guard fields.count == 5 || fields.count == 7 else {
+      guard fields.count == 5 || fields.count == 6 || fields.count == 7 else {
         throw ParserError.insufficientFields(line: lineNumber, expected: 5, got: fields.count)
       }
       let event = try parseAssetEvent(fields: fields, lineNumber: lineNumber, sourceOrder: sourceOrder)
@@ -238,6 +238,12 @@ public enum InputParser {
       originalExpenses = expenses
       price = price * rate
       expenses = expenses * rate
+    } else if (transactionType == .buy || transactionType == .sell), fields.count == 7 {
+      // Currency provided without rate — rate will be fetched later
+      originalCurrency = fields[6]
+      exchangeRate = nil
+      originalPrice = price
+      originalExpenses = expenses
     } else {
       originalCurrency = nil
       exchangeRate = nil
@@ -303,6 +309,11 @@ public enum InputParser {
         exchangeRate = rate
         originalValue = value
         value = value * rate
+      } else if fields.count == 6 {
+        // Currency provided without rate — rate will be fetched later
+        originalCurrency = fields[5]
+        exchangeRate = nil
+        originalValue = value
       } else {
         originalCurrency = nil
         exchangeRate = nil
