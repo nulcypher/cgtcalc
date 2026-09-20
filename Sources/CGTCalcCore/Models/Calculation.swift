@@ -14,6 +14,7 @@ public enum CalculationError: Error, LocalizedError {
     firstLaterAcquisitionDate: Date)
   case invalidAssetEventAmount(asset: String, date: Date, type: AssetEventType, expected: Decimal, actual: Decimal)
   case unsupportedCapitalReturn(asset: String, date: Date, value: Decimal, availableCost: Decimal)
+  case unsupportedCapitalDistribution(asset: String, date: Date, value: Decimal, availableCost: Decimal)
   case unsupportedSameDateCombination(asset: String, date: Date, rowTypes: [String])
 
   /// Human-readable explanation for a calculation failure.
@@ -36,6 +37,13 @@ public enum CalculationError: Error, LocalizedError {
       "Invalid \(type.rawValue) amount for \(asset) on \(DateParser.format(date)): expected \(expected), got \(actual)"
     case .unsupportedCapitalReturn(let asset, let date, let value, let availableCost):
       "Unsupported CAPRETURN for \(asset) on \(DateParser.format(date)): value £\(value) exceeds the £\(availableCost) remaining allowable cost attributable to the event. CAPRETURN supports fund equalisation cost reductions and cannot reduce allowable cost below zero."
+    case .unsupportedCapitalDistribution(let asset, let date, let value, let availableCost):
+      // A capital distribution that exceeds the remaining pool cost is, under TCGA 1992 s.122,
+      // a part disposal: the excess over base cost is a chargeable gain. This tool does not yet
+      // compute that excess gain, so it rejects the input rather than silently truncating the
+      // cost at zero. A future enhancement should instead consume the cost down to zero and
+      // report the remainder as an amount the user must treat as a chargeable gain.
+      "Unsupported CAPDIST for \(asset) on \(DateParser.format(date)): value £\(value) exceeds the £\(availableCost) remaining pool cost. Under TCGA 1992 s.122 the excess over base cost is a chargeable gain (a part disposal), which this tool does not yet compute. Reduce the distribution to at most the remaining cost, or handle the excess as a separate disposal."
     case .unsupportedSameDateCombination(let asset, let date, let rowTypes):
       "Unsupported same-date combination for \(asset) on \(DateParser.format(date)): \(rowTypes.joined(separator: ", ")). Date-only input cannot establish the event entitlement or restructure quantity basis."
     }

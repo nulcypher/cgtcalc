@@ -112,6 +112,7 @@ The full list of kinds of data are as follows:
 | `SPOUSEIN`  | Transaction  | No-gain/no-loss transfer in from spouse/civil partner | `<DATE> <ASSET> <AMOUNT> TOTALCOST <EXACT_TOTAL_COST>` |
 | `SPOUSEOUT` | Transaction  | No-gain/no-loss transfer out to spouse/civil partner (costed using normal share-identification ordering) | `<DATE> <ASSET> <AMOUNT>` |
 | `CAPRETURN` | Asset event  | Capital return / equalisation event which reduces allowable cost | `<DATE> <ASSET> <AMOUNT> <VALUE>` |
+| `CAPDIST`   | Asset event  | General capital distribution (e.g. return of capital reserves) which reduces the whole Section 104 pool's allowable cost | `<DATE> <ASSET> <AMOUNT> <VALUE>` |
 | `DIVIDEND`  | Asset event  | Accumulation distribution which increases allowable cost | `<DATE> <ASSET> <AMOUNT> <VALUE>` |
 | `SPLIT`     | Asset event  | Stock split     | `<DATE> <ASSET> <MULTIPLIER>` |
 | `UNSPLIT`   | Asset event  | Stock un-split  | `<DATE> <ASSET> <MULTIPLIER>` |
@@ -197,6 +198,18 @@ Important semantics:
 - When a mismatch is accepted within that tolerance, cost-basis adjustments are apportioned using the calculator's eligible holding quantity, not the broker-rounded reported amount.
 - Proportional event values are normalized using nearest rounding at 10 decimal places before being applied to allowable cost. Whole-pound tax rounding still happens later at disposal level.
 - Same-day same-asset sells are merged into one effective disposal for calculation and rounding.
+
+### General capital distributions (CAPDIST)
+
+`CAPDIST` handles a general capital distribution — for example a return of capital reserves paid by a company to all shareholders — as distinct from the fund-equalisation `CAPRETURN`.
+
+- `CAPRETURN` reduces the allowable cost attributable only to the Group II tranche (fund equalisation). `CAPDIST` reduces the allowable cost of the **whole Section 104 pool**, because a general capital distribution applies to every share held.
+- Unlike `CAPRETURN` and `DIVIDEND`, a `CAPDIST` **may share its date** with a transaction or restructure for the same asset: it applies to the entire holding, so there is no entitlement ambiguity to resolve.
+- Date `CAPDIST` using the effective / entitlement (ex) date for the holding, not the later cash payment date.
+
+**Limitation (s.122 excess).** Under TCGA 1992 s.122, a capital distribution that exceeds the remaining base cost is a part disposal: the excess over cost is a chargeable gain. `cgtcalc` does **not** yet compute that excess gain. If a `CAPDIST` value exceeds the remaining pool cost, the calculation is **rejected** with an error rather than silently truncating the cost at zero (which would understate the gain). In that case, reduce the distribution to at most the remaining cost and handle the excess as a separate disposal on your return.
+
+A future enhancement could instead consume the cost down to zero automatically and report the remainder as an amount to be treated as a chargeable gain; this needs a warnings channel from the calculation through to the report, which does not exist yet.
 
 ### Excess Reportable Income (ERI) on reporting offshore funds
 

@@ -43,7 +43,10 @@ enum CalculationTimeline {
       rowTypesByKey[key, default: []].append(event.type.rawValue)
       if event.distributionType == nil {
         restructureCountByKey[key, default: 0] += 1
-      } else {
+      } else if event.type != .capitalDistribution {
+        // CAPDIST is a general capital distribution that applies to the entire holding,
+        // so its entitlement is unambiguous even when it shares a date with a transaction
+        // or restructure. Only fund distributions (CAPRETURN/DIVIDEND) are date-restricted.
         distributionCountByKey[key, default: 0] += 1
       }
     }
@@ -82,6 +85,8 @@ enum CalculationTimeline {
       let kind: AssetEvent.Kind = switch type {
       case .capitalReturn:
         .capitalReturn(amount: amount, value: value)
+      case .capitalDistribution:
+        .capitalDistribution(amount: amount, value: value)
       case .dividend:
         .dividend(amount: amount, value: value)
       case .split, .unsplit, .restruct:
@@ -142,7 +147,7 @@ enum CalculationTimeline {
     switch event.kind {
     case .dividend:
       2
-    case .capitalReturn:
+    case .capitalReturn, .capitalDistribution:
       3
     case .split, .unsplit, .restruct:
       4

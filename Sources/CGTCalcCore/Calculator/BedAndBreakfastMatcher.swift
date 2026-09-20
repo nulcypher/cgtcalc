@@ -138,7 +138,7 @@ enum BedAndBreakfastMatcher {
         (oldUnits: multiplier, newUnits: 1)
       case .restruct(let oldUnits, let newUnits):
         (oldUnits: oldUnits, newUnits: newUnits)
-      case .capitalReturn, .dividend:
+      case .capitalReturn, .capitalDistribution, .dividend:
         nil
       }
 
@@ -191,7 +191,10 @@ enum BedAndBreakfastMatcher {
       return switch event.kind {
       case .capitalReturn, .dividend:
         true
-      case .split, .unsplit, .restruct:
+      // CAPDIST (general capital distribution) acts on the Section 104 pool only; it is not
+      // applied to bed & breakfast matched rebuy costs. A CAPDIST falling between a disposal
+      // and its B&B rebuy is an unlikely edge case and is deliberately excluded here.
+      case .capitalDistribution, .split, .unsplit, .restruct:
         false
       }
     }
@@ -246,7 +249,7 @@ enum BedAndBreakfastMatcher {
         adjustment += allocatedValue
         allocatedEventValues[event.id, default: 0] += allocatedValue
         allocatedEventQuantities[event.id, default: 0] += matchedQuantityOnEventDateBasis
-      case .split, .unsplit, .restruct:
+      case .capitalDistribution, .split, .unsplit, .restruct:
         continue
       }
     }
@@ -272,7 +275,7 @@ enum BedAndBreakfastMatcher {
       return switch event.kind {
       case .split, .unsplit, .restruct:
         true
-      case .capitalReturn, .dividend:
+      case .capitalReturn, .capitalDistribution, .dividend:
         false
       }
     }
@@ -297,7 +300,7 @@ enum BedAndBreakfastMatcher {
         (oldUnits: multiplier, newUnits: 1)
       case .restruct(let oldUnits, let newUnits):
         (oldUnits: oldUnits, newUnits: newUnits)
-      case .capitalReturn, .dividend:
+      case .capitalReturn, .capitalDistribution, .dividend:
         nil
       }
 

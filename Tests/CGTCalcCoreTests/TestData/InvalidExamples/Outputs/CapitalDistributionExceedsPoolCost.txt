@@ -1,0 +1,1 @@
+Error calculating CGT: Unsupported CAPDIST for TEST on 01/02/2020: value £150 exceeds the £100 remaining pool cost. Under TCGA 1992 s.122 the excess over base cost is a chargeable gain (a part disposal), which this tool does not yet compute. Reduce the distribution to at most the remaining cost, or handle the excess as a separate disposal.

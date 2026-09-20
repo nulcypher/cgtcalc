@@ -311,6 +311,8 @@ public struct TextReportFormatter {
         output += "\(dateStr) \(event.asset) RESTRUCT by \(self.formatDecimal(oldUnits)):\(self.formatDecimal(newUnits))\n"
       case .capitalReturn(let amount, let value):
         output += "\(dateStr) \(event.asset) CAPITAL RETURN on \(self.formatDecimal(amount)) for \(self.formatCurrency(value))\n"
+      case .capitalDistribution(let amount, let value):
+        output += "\(dateStr) \(event.asset) CAPITAL DISTRIBUTION on \(self.formatDecimal(amount)) for \(self.formatCurrency(value))\n"
       case .dividend(let amount, let value):
         output += "\(dateStr) \(event.asset) DIVIDEND on \(self.formatDecimal(amount)) for \(self.formatCurrency(value))\n"
       }

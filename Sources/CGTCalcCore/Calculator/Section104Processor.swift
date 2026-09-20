@@ -224,6 +224,22 @@ enum Section104Processor {
       adjustedHolding.costBasis = max(0, adjustedHolding.costBasis - value)
       adjustedHolding.groupIIEntries = self.applyingGroupIIAdjustment(-value, to: holding.groupIIEntries)
       return adjustedHolding
+    case .capitalDistribution:
+      // A general capital distribution reduces the whole pool's allowable cost (unlike
+      // CAPRETURN, which is a fund-equalisation reduction attributable only to the Group II
+      // tranche). It applies across the entire holding, so it is validated against the whole
+      // pool cost. If it would exceed that cost the excess is, under TCGA 1992 s.122, a
+      // chargeable gain (part disposal) which this tool does not yet compute; the validator
+      // rejects that case rather than truncating cost at zero. See CapitalDistributionValidator.
+      var adjustedHolding = holding
+      try CapitalDistributionValidator.validate(
+        asset: event.asset,
+        date: event.date,
+        value: value,
+        availableCost: holding.costBasis)
+      adjustedHolding.costBasis = max(0, adjustedHolding.costBasis - value)
+      adjustedHolding.groupIIEntries = self.applyingGroupIIAdjustment(-value, to: holding.groupIIEntries)
+      return adjustedHolding
     case .dividend:
       var adjustedHolding = holding
       adjustedHolding.costBasis += value
@@ -294,7 +310,7 @@ enum Section104Processor {
             poolQuantity: match.poolQuantity * ratio.newUnits / ratio.oldUnits,
             poolCost: match.poolCost)
         }
-      case .capitalReturn, .dividend:
+      case .capitalReturn, .capitalDistribution, .dividend:
         continue
       }
     }

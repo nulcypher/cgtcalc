@@ -112,6 +112,22 @@ struct TestSupport {
       distributionValue: value)
   }
 
+  static func capDist(
+    _ date: String,
+    _ asset: String,
+    _ amount: Decimal,
+    _ value: Decimal,
+    sourceOrder: Int? = nil) -> AssetEvent
+  {
+    try! AssetEvent(
+      sourceOrder: sourceOrder,
+      type: .capitalDistribution,
+      date: self.date(date),
+      asset: asset,
+      distributionAmount: amount,
+      distributionValue: value)
+  }
+
   static func disposal(
     asset: String = "TEST",
     date: String,

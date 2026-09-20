@@ -1,0 +1,39 @@
+# SUMMARY
+
+Tax year    Gain   Proceeds   Exemption   Loss carry   Taxable gain
+===================================================================
+2020/2021   £390   £1200      £12300      £0           £0          
+
+
+# TAX YEAR DETAILS
+
+## TAX YEAR 2020/2021
+
+1 gains with total of 390.
+0 losses with total of 0.
+
+1) SOLD 100 of LON:FOO on 01/06/2020 for GAIN of £390
+Matches with:
+  - SECTION 104: 100 at cost basis of £8.05
+Calculation: (100 * 12 - 5) - ( (100 * 8.05) ) = 390
+
+
+# TAX RETURN INFORMATION
+
+2020/2021: Disposals = 1, proceeds = 1200, allowable costs = 810, total gains = 390, total losses = 0
+
+
+# HOLDINGS
+
+NONE
+
+
+# TRANSACTIONS
+
+01/01/2019 BOUGHT 100 of LON:FOO at £10 with £5 expenses
+01/06/2020 SOLD 100 of LON:FOO at £12 with £5 expenses
+
+
+# ASSET EVENTS
+
+01/03/2019 LON:FOO CAPITAL DISTRIBUTION on 100 for £200

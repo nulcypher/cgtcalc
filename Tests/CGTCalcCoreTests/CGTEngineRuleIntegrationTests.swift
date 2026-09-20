@@ -75,6 +75,79 @@ final class CGTEngineRuleIntegrationTests: XCTestCase {
     XCTAssertEqual(disposal.gain, 150)
   }
 
+  func testCapitalDistributionReducesSection104CostBasis() throws {
+    // £1000 pool cost, £200 distribution -> £800 cost over 100 shares = £8/share.
+    let result = try CGTEngine.calculate(
+      transactions: [
+        TestSupport.buy("01/01/2019", "TEST", 100, 10.0, 0),
+        TestSupport.sell("01/06/2020", "TEST", 100, 12.0, 0)
+      ],
+      assetEvents: [
+        TestSupport.capDist("01/03/2019", "TEST", 100, 200.0)
+      ])
+
+    let disposal = try XCTUnwrap(result.taxYearSummaries.first?.disposals.first)
+    // (100 * 12) - (100 * 8) = 400
+    XCTAssertEqual(disposal.gain, 400)
+  }
+
+  func testCapitalDistributionExceedingPoolCostThrows() {
+    // £1000 pool cost, £5000 distribution: the excess over base cost would be a s.122
+    // chargeable gain, which the tool does not compute, so it must reject rather than
+    // truncate cost at zero.
+    XCTAssertThrowsError(try CGTEngine.calculate(
+      transactions: [
+        TestSupport.buy("01/01/2019", "TEST", 100, 10.0, 0),
+        TestSupport.sell("01/06/2020", "TEST", 100, 12.0, 0)
+      ],
+      assetEvents: [
+        TestSupport.capDist("01/03/2019", "TEST", 100, 5000.0)
+      ])) { error in
+      guard case CalculationError.unsupportedCapitalDistribution = error else {
+        return XCTFail("Expected unsupportedCapitalDistribution, got \(error)")
+      }
+    }
+  }
+
+  func testCapitalDistributionMayShareDateWithTransaction() throws {
+    // Unlike CAPRETURN, a general capital distribution applies to the whole holding and is
+    // not ambiguous when it shares a date with a buy, so it must not be rejected.
+    let result = try CGTEngine.calculate(
+      transactions: [
+        TestSupport.buy("01/01/2019", "TEST", 100, 10.0, 0),
+        TestSupport.buy("01/06/2019", "TEST", 50, 11.0, 0),
+        TestSupport.sell("01/06/2020", "TEST", 150, 15.0, 0)
+      ],
+      assetEvents: [
+        // Same date as the second buy.
+        TestSupport.capDist("01/06/2019", "TEST", 150, 300.0)
+      ])
+
+    let disposal = try XCTUnwrap(result.taxYearSummaries.first?.disposals.first)
+    // Pool cost = 1000 + 550 - 300 = 1250 over 150 shares. (150*15) - 1250 = 1000.
+    XCTAssertEqual(disposal.gain, 1000)
+  }
+
+  func testCapitalDistributionCostRestoredByLaterPurchase() throws {
+    // CAPDIST drives cost to a low point, a later BUY rebuilds it, and a subsequent SELL must
+    // use the restored average cost - the zero-floor episode must not persist.
+    let result = try CGTEngine.calculate(
+      transactions: [
+        TestSupport.buy("01/01/2019", "TEST", 100, 10.0, 0), // cost 1000
+        TestSupport.buy("01/01/2020", "TEST", 100, 20.0, 0), // adds 2000 -> cost 2200 over 200
+        TestSupport.sell("01/06/2020", "TEST", 200, 25.0, 0)
+      ],
+      assetEvents: [
+        // Between the two buys: reduce cost by 900 (1000 -> 100 over 100 shares).
+        TestSupport.capDist("01/03/2019", "TEST", 100, 900.0)
+      ])
+
+    let disposal = try XCTUnwrap(result.taxYearSummaries.first?.disposals.first)
+    // After capdist: 100 sh @ cost 100. After second buy: 200 sh @ cost 2100.
+    // (200 * 25) - 2100 = 2900.
+    XCTAssertEqual(disposal.gain, 2900)
+  }
+
   func testInvalidAssetEventAmountThrows() {
     XCTAssertThrowsError(try CGTEngine.calculate(
       transactions: [
