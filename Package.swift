@@ -12,7 +12,10 @@ let package = Package(
       targets: ["CGTCalcCore"]),
     .executable(
       name: "cgtcalc",
-      targets: ["cgtcalc"])
+      targets: ["cgtcalc"]),
+    .executable(
+      name: "cgtcalc-fx",
+      targets: ["cgtcalc-fx"])
   ],
   dependencies: [
     .package(url: "https://github.com/apple/swift-argument-parser", from: "1.7.0")
@@ -29,6 +32,12 @@ let package = Package(
         .product(name: "ArgumentParser", package: "swift-argument-parser")
       ],
       path: "Sources/cgtcalc"),
+    .executableTarget(
+      name: "cgtcalc-fx",
+      dependencies: [
+        .product(name: "ArgumentParser", package: "swift-argument-parser")
+      ],
+      path: "Sources/cgtcalc-fx"),
     .testTarget(
       name: "CGTCalcCoreTests",
       dependencies: ["CGTCalcCore"],
@@ -43,5 +52,9 @@ let package = Package(
     .testTarget(
       name: "cgtcalcTests",
       dependencies: ["cgtcalc"],
-      path: "Tests/cgtcalcTests")
+      path: "Tests/cgtcalcTests"),
+    .testTarget(
+      name: "cgtcalcFXTests",
+      dependencies: ["cgtcalc-fx"],
+      path: "Tests/cgtcalcFXTests")
   ])
